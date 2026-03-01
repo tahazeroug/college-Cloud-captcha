@@ -11,6 +11,10 @@ from captcha.image import ImageCaptcha
 import random
 import string
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 
 app = Flask(__name__)
 CORS(app)  # 2. Enable it for all routes
@@ -23,7 +27,11 @@ if not os.path.exists('static'):
 CAPTCHA_TEXT_LENGTH = 6
 # Global variable to store the current answer
 # (Note: In real cloud apps, we'd use a database/session)
-#current_captcha_answer = ""
+current_captcha_answer = ""
+
+def require_auth():
+    auth_header = request.headers.get("Authorization")
+    return auth_header == f"Bearer {ACCESS_TOKEN}"
 
 """Generates a random string of uppercase letters and digits."""
 def generate_random_text():
@@ -37,8 +45,13 @@ def index():
     return render_template("index.html")
 
 
+
 @app.route("/captcha", methods=["GET"])
 def get_captcha():
+
+    if not require_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+
     """
     Endpoint: GET /captcha
     Generates a text challenge and saves the fuzzy image to disk.
@@ -67,8 +80,15 @@ def serve_static(filename):
     # Helps the browser find the image inside the static folder
     return send_from_directory('static', filename)
 
+
+
+
 @app.route("/verify", methods=["POST"])
 def verify_captcha():
+
+    if not require_auth():
+        return jsonify({"error": "Unauthorized"}), 401
+
     """
     Endpoint: POST /verify
     Checks if the user's JSON input matches the stored captcha.
@@ -91,8 +111,8 @@ def verify_captcha():
 @app.route("/view-image")
 def view_image():
     """Serves the generated captcha image to the browser."""
-    if os.path.exists("captcha.png"):
-        return send_file("captcha.png", mimetype='image/png')
+    if os.path.exists("static/captcha.png"):
+        return send_file("static/captcha.png", mimetype='image/png')
     return jsonify({"error": "No image generated yet"}), 404
 
 if __name__ == "__main__":
@@ -104,7 +124,7 @@ if __name__ == "__main__":
     print("🚀 Captcha Service Running...")
     #app.run(host="0.0.0.0", port=port)
     #app.run(host="0.0.0.0", port=port, debug=True)
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
     # host="0.0.0.0" is REQUIRED for cloud deployment
     # debug mode enables to see errors and relaunch the server
     # utile in developpment and test stage
