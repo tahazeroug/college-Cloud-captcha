@@ -1,0 +1,40 @@
+from flask import Flask, jsonify, request, render_template
+from captcha.image import ImageCaptcha
+import random
+import string
+
+app = Flask(__name__)
+
+CURRENT_CAPTCHA = ""
+
+def generate_text():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/captcha", methods=["GET"])
+def captcha():
+    global CURRENT_CAPTCHA
+    
+    CURRENT_CAPTCHA = generate_text()
+
+    image = ImageCaptcha(width=280, height=90)
+    data = image.generate(CURRENT_CAPTCHA)
+
+    with open("static/captcha.png", "wb") as f:
+        f.write(data.read())
+
+    return jsonify({"message": "Captcha generated"})
+
+@app.route("/verify", methods=["POST"])
+def verify():
+    user_input = request.json.get("captcha")
+
+    if user_input == CURRENT_CAPTCHA:
+        return jsonify({"status": "success"})
+    return jsonify({"status": "failed"})
+
+if __name__ == "__main__":
+    app.run(port=5000)

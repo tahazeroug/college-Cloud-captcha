@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Captcha Cloud Lab</title>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: Arial; text-align:center; padding-top: 50px;">
+
+    <h2>I need to verify you are a human, not a robot </h2>
+    <h4> (I am a robot though 😜) </h4>
+
+    <img src="https://cdn-icons-png.flaticon.com/512/4712/4712027.png" width="100">
+    <br><br>
+
+    <img id="captcha_img" src="/static/captcha.png" width="280" style="border: 1px solid #ccc; border-radius: 8px;">
+    <br>
+    <button onclick="reloadCaptcha()" style="font-size: 12px; cursor: pointer;">🔄 Reload Image</button>
+    <br><br>
+
+    <input id="captcha_input" placeholder="Enter text here" style="padding: 10px; font-size: 16px;">
+    <button onclick="verify()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Verify</button>
+
+    <h3 id="result"></h3>
+
+    <script>    // JavaScript
+        // Set this to your Render URL (e.g., https://my-app.onrender.com)
+        // Leave as empty string if the HTML is served by the same Flask app
+        // Empty string means "use the same server I came from"
+        const BASE_URL = "";
+        // for local tests only
+        //const BASE_URL = "http://127.0.0.1:5000";
+
+        // code for verify Captcha
+        async function verify() {
+
+            const inputField = document.getElementById("captcha_input");
+            const resultText = document.getElementById("result");
+
+            const res = await fetch(`${BASE_URL}/verify`, {
+                method: "POST",
+                headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ captcha: inputField.value })
+            });
+
+            const data = await res.json();
+
+            if (data.status === "verified") {
+                resultText.innerText = "✅ Success! You are human.";
+                resultText.style.color = "green";
+            } else {
+                resultText.innerText = "❌ Failed. Try again.";
+                resultText.style.color = "red";
+                reloadCaptcha(); // Automatically reload on failure
+                inputField.value = ""; // Clear the input
+            }
+        }
+
+        // reaload the Captcha in case user can't read it or fails
+        async function reloadCaptcha() {
+
+            // 1. Tell the server to generate a new image
+            await fetch(`${BASE_URL}/captcha`);
+
+            // 2. Get the image element
+            const img = document.getElementById("captcha_img");
+
+            // 3. Force the browser to re-download the image
+            // (We add ?t=... so the browser thinks it's a new file
+            // and bypasses the cache
+            img.src = `${BASE_URL}/static/captcha.png?t=${new Date().getTime()}`;
+
+        }
+    </script>
+
+</body>
+</html>

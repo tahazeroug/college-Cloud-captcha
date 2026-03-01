@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cloud CAPTCHA</title>
+</head>
+<body>
+
+<h2>Cloud CAPTCHA</h2>
+
+<img id="captchaImage" src="/static/captcha.png" width="280">
+
+<br><br>
+
+<input type="text" id="captchaInput" placeholder="Enter CAPTCHA">
+<button onclick="verifyCaptcha()">Verify</button>
+
+<script>
+async function loadCaptcha() {
+    await fetch("/captcha");
+    document.getElementById("captchaImage").src =
+        "/static/captcha.png?" + new Date().getTime();
+}
+
+async function verifyCaptcha() {
+    const value = document.getElementById("captchaInput").value;
+
+    const response = await fetch("/verify", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({captcha: value})
+    });
+
+    const result = await response.json();
+    alert(result.status);
+}
+
+loadCaptcha();
+</script>
+
+</body>
+</html>
